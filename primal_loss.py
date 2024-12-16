@@ -15,7 +15,7 @@ def compute_spv_w(cfg, model, r, p, q):
     device = cfg.device
     G = Data(cfg)
 
-    P,Q = p.to('mps').detach().numpy().copy(),q.to('mps').detach().numpy().copy()
+    P,Q = p.to(device).detach().cpu().numpy().copy(),q.to(device).detach().cpu().numpy().copy()
     spv_w = torch.zeros((num_agents,num_agents)).to(device)
     for agent_idx in range(num_agents):
         P_mis, Q_mis = G.generate_all_misreports(P, Q, agent_idx = agent_idx, is_P = True, include_truncation = False)
@@ -39,7 +39,7 @@ def compute_spv_f(cfg, model, r, p, q):
     device = cfg.device
     G = Data(cfg)
 
-    P,Q = p.to('mps').detach().numpy().copy(),q.to('mps').detach().numpy().copy()
+    P,Q = p.to(device).detach().numpy().copy(),q.to(device).detach().numpy().copy()
     spv_f = torch.zeros((num_agents,num_agents)).to(device)
     for agent_idx in range(num_agents):
         P_mis, Q_mis = G.generate_all_misreports(P, Q, agent_idx = agent_idx, is_P = False, include_truncation = False)
@@ -58,16 +58,18 @@ def compute_spv_f(cfg, model, r, p, q):
             spv_f[w,agent_idx] = ((r_mis_agent - r_agent)*mask).sum(-1).relu().sum(-1).mean()
     return spv_f
 
+
+
 def compute_loss(cfg, model, r, p, q, lambd, rho):
     t = compute_t(r,p,q)
     spv_w = compute_spv_w(cfg,model,r,p,q)
-    spv_f = compute_spv_f(cfg,model,r,p,q)
+#    spv_f = compute_spv_f(cfg,model,r,p,q) 受け手のspは今回無視
 
-    constr_vio = spv_w+spv_f
+    constr_vio = spv_w#+spv_f
 
     obj = t.sum(-1).sum(-1).mean()
 
     lambd = torch.Tensor(lambd).to(cfg.device)
-    loss = obj + (constr_vio*lambd).sum() + 0.5*rho*constr_vio.square().sum()
+    loss = obj + (constr_vio*lambd).sum() + 0.5*rho*constr_vio.square().sum() # 3項目は大きいものを強く抑制するため
 
     return loss,constr_vio,obj

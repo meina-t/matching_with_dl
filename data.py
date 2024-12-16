@@ -20,8 +20,7 @@ class Data(object):
         self.num_agents = cfg.num_agents
         self.prob = cfg.prob
         self.corr = cfg.corr
-        
-        
+             
     def sample_ranking(self, N, prob):
         """ 
         Samples ranked lists
@@ -68,7 +67,37 @@ class Data(object):
             
         return M/self.num_agents
     
+    def sample_ranking_with_ties(self, N, prob):
+        """ 
+        Samples ranked lists with ties
+        Arguments
+            N: Number of samples
+            prob: Probability of truncation       
+        Returns:
+            Ranked List of shape [N, Num_agents] (with ties)
+        """
+        # Generate random scores for ranking
+        scores = np.random.rand(N, self.num_agents)
         
+        # Add random noise to introduce ties
+        noise = np.random.uniform(0, 0.1, scores.shape)
+        scores = np.round(scores + noise, decimals=1)
+        
+        # Convert scores to rankings with ties
+        P = np.argsort(-scores, axis=1) + 1  # Higher scores get lower rank numbers
+        rankings = np.zeros_like(P, dtype=float)
+        for i, row in enumerate(P):
+            unique_scores, indices = np.unique(-scores[i], return_inverse=True)
+            rankings[i] = indices + 1  # Rank starts at 1
+        
+        N_trunc = int(N * prob)
+        if N_trunc > 0:
+            idx = np.random.choice(N, N_trunc, replace=False)
+            trunc = np.random.randint(self.num_agents, size=N_trunc)
+            rankings[idx, trunc] = 0  # Introduce truncation
+        
+        return rankings / self.num_agents    
+       
     def generate_batch(self, batch_size, prob = None, corr = None):
         """
         Samples a batch of data from training
@@ -87,15 +116,15 @@ class Data(object):
         
         N = batch_size * self.num_agents
         
-        P = self.sample_ranking(N, prob)
-        Q = self.sample_ranking(N, prob) 
+        P = self.sample_ranking_with_ties(N, prob)
+        Q = self.sample_ranking_with_ties(N, prob) 
         
         P = P.reshape(-1, self.num_agents, self.num_agents)                           
         Q = Q.reshape(-1, self.num_agents, self.num_agents)
                 
         if corr > 0.00:
-            P_common = self.sample_ranking(batch_size, prob).reshape(batch_size, 1, self.num_agents)
-            Q_common = self.sample_ranking(batch_size, prob).reshape(batch_size, 1, self.num_agents)
+            P_common = self.sample_ranking_with_ties(batch_size, prob).reshape(batch_size, 1, self.num_agents)
+            Q_common = self.sample_ranking_with_ties(batch_size, prob).reshape(batch_size, 1, self.num_agents)
         
             P_idx = np.random.binomial(1, corr, [batch_size, self.num_agents, 1])
             Q_idx = np.random.binomial(1, corr, [batch_size, self.num_agents, 1])
@@ -177,3 +206,8 @@ class Data(object):
         P_mis, Q_mis = self.compose_misreport(P, Q, M, agent_idx, is_P)
         
         return P_mis, Q_mis
+    
+    def generate_stable_matching(self, P, Q):
+        """ Generates stable matching
+        Arguments:
+            P"""

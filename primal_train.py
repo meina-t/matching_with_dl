@@ -16,7 +16,7 @@ class HParams:
     def __init__(self, num_agents = 3,
                  batch_size = 1024, num_hidden_layers = 4, num_hidden_nodes = 256, lr = 5e-3, epochs = 50000,
                  print_iter = 100, val_iter = 1000, num_val_batches = 200,
-                 prob = 0, corr = 0, seed = 0, device = "cuda:0",
+                 prob = 0, corr = 0, seed = 0, device = "mps",
                  lambd = torch.ones((3,3)), rho = 1, lagr_iter = 100):
         self.num_agents = num_agents
         self.batch_size = batch_size
@@ -91,7 +91,7 @@ def train_primal(cfg, G, model, include_truncation = False):
 
         loss,constr_vio,obj = compute_loss(cfg,model,r,p,q,lambd,cfg.rho)
         if (i>0) and (i%cfg.lagr_iter == 0):
-            lambd += cfg.rho*constr_vio.to('mps').detach().numpy().copy()
+            lambd += cfg.rho*constr_vio.cpu().detach().numpy().copy()
             print(lambd)
             cfg.lambd = lambd
         
