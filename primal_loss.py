@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import numpy as np
 from data import Data
 
+from efficiency_loss import compute_efficiency_loss
+
 def compute_t(r, p, q):
     wp = torch.where(p[:, :, None, :] - p[:, :, :, None]>0,1,0).to(torch.float)
     wq = torch.where(q[:, :, None, :] - q[:, None, :, :]>0,1,0).to(torch.float)
@@ -68,8 +70,15 @@ def compute_loss(cfg, model, r, p, q, lambd, rho):
     constr_vio = spv_w#+spv_f
 
     obj = t.sum(-1).sum(-1).mean()
+    # t の統計を表示
+    print("t mean:", t.mean().item())
+    print("t max:", t.max().item())
+    print("t min:", t.min().item())
+
+
+    efficiency_loss = compute_efficiency_loss(cfg, r, p, q)
 
     lambd = torch.Tensor(lambd).to(cfg.device)
-    loss = obj + (constr_vio*lambd).sum() + 0.5*rho*constr_vio.square().sum() # 3項目は大きいものを強く抑制するため
+    loss = obj + (constr_vio*lambd).sum() + 0.5*rho*constr_vio.square().sum() + efficiency_loss # 3項目は大きいものを強く抑制するため
 
-    return loss,constr_vio,obj
+    return loss, constr_vio, obj, efficiency_loss

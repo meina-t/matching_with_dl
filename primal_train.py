@@ -23,7 +23,7 @@ class HParams:
         self.num_hidden_layers = 4
         self.num_hidden_nodes = 256
         self.lr = 5e-3
-        self.epochs = 50000
+        self.epochs = epochs
         self.print_iter = 100
         self.val_iter = 1000
         self.save_iter = self.epochs - 1
@@ -89,10 +89,10 @@ def train_primal(cfg, G, model, include_truncation = False):
         p, q = torch.Tensor(P).to(cfg.device), torch.Tensor(Q).to(cfg.device)
         r = model(p, q)
 
-        loss,constr_vio,obj = compute_loss(cfg,model,r,p,q,lambd,cfg.rho)
+        loss, constr_vio, obj, efficiency_loss = compute_loss(cfg,model,r,p,q,lambd,cfg.rho)
         if (i>0) and (i%cfg.lagr_iter == 0):
             lambd += cfg.rho*constr_vio.cpu().detach().numpy().copy()
-            print(lambd)
+            #print(lambd)
             cfg.lambd = lambd
         
         loss.backward(retain_graph=True)
@@ -105,26 +105,30 @@ def train_primal(cfg, G, model, include_truncation = False):
         # Validation
         if i% cfg.print_iter == 0 or i == cfg.epochs - 1:
             logger.info("[TRAIN-ITER]: %d, [Time-Elapsed]: %f, [Total-Loss]: %f"%(i, t_elapsed, loss.item()))
-            logger.info("[CONSTR-Vio]: %f, [OBJECTIVE]: %f"%(constr_vio.sum().item(),obj.item()))
+            logger.info("[CONSTR-Vio]: %f, [OBJECTIVE]: %f, [EFFICIENCY-loss]:  %f"%(constr_vio.sum().item(),obj.item(), efficiency_loss))
 
         if (i>0) and (i % cfg.save_iter == 0) or i == cfg.epochs - 1:
-            torch.save(model, "deep-matching/models/primal/model_tmp.pth")
+            #torch.save(model, "deep-matching/models/primal/model_tmp.pth")
+            logger.info('train ended!')
 
         if ((i>0) and (i% cfg.val_iter == 0)) or i == cfg.epochs - 1:
             model.eval()
+            """
             with torch.no_grad():
                 val_loss = 0
                 val_constr_vio = 0
                 val_obj = 0
+                val_efficiency_loss = 0
                 for j in range(cfg.num_val_batches):
                     P, Q = G.generate_batch(cfg.batch_size)
                     p, q = torch.Tensor(P).to(cfg.device), torch.Tensor(Q).to(cfg.device)
                     r = model(p, q)
-                    loss,constr_vio,obj = compute_loss(cfg,model,r,p,q,lambd,cfg.rho)
+                    loss,constr_vio,obj, efficiency_loss = compute_loss(cfg,model,r,p,q,lambd,cfg.rho)
                     val_loss += loss.item()
                     val_constr_vio += constr_vio.sum().item()
                     val_obj += obj.item()
-                logger.info("\t[VAL-ITER]: %d, [LOSS]: %f, [Constr-vio]: %f, [Objective]: %f"%(i, val_loss/cfg.num_val_batches, val_constr_vio/cfg.num_val_batches, val_obj/cfg.num_val_batches))
-
+                    val_efficiency_loss += efficiency_loss
+                logger.info("\t[VAL-ITER]: %d, [LOSS]: %f, [Constr-vio]: %f, [Objective]: %f, [Effucutncy-vio]: %f"%(i, val_loss/cfg.num_val_batches, val_constr_vio/cfg.num_val_batches, val_obj/cfg.num_val_batches, val_efficiency_loss/cfg.num_val_batches))
+            """
         i += 1
 
