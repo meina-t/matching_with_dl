@@ -116,14 +116,14 @@ class Data(object):
         
         N = batch_size * self.num_agents
         
-        P = self.sample_ranking_with_ties(N, prob)
+        P = self.sample_ranking(N, prob)
         Q = self.sample_ranking_with_ties(N, prob) 
         
         P = P.reshape(-1, self.num_agents, self.num_agents)                           
         Q = Q.reshape(-1, self.num_agents, self.num_agents)
                 
         if corr > 0.00:
-            P_common = self.sample_ranking_with_ties(batch_size, prob).reshape(batch_size, 1, self.num_agents)
+            P_common = self.sample_ranking(batch_size, prob).reshape(batch_size, 1, self.num_agents)
             Q_common = self.sample_ranking_with_ties(batch_size, prob).reshape(batch_size, 1, self.num_agents)
         
             P_idx = np.random.binomial(1, corr, [batch_size, self.num_agents, 1])
@@ -206,8 +206,3 @@ class Data(object):
         P_mis, Q_mis = self.compose_misreport(P, Q, M, agent_idx, is_P)
         
         return P_mis, Q_mis
-    
-    def generate_stable_matching(self, P, Q):
-        """ Generates stable matching
-        Arguments:
-            P"""

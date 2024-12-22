@@ -7,10 +7,34 @@ from data import Data
 from efficiency_loss import compute_efficiency_loss
 
 def compute_t(r, p, q):
-    wp = torch.where(p[:, :, None, :] - p[:, :, :, None]>0,1,0).to(torch.float)
-    wq = torch.where(q[:, :, None, :] - q[:, None, :, :]>0,1,0).to(torch.float)
-    t =  1- r - torch.einsum('bic,bijc->bij', r, wp) - torch.einsum('bic,biac->bac', r, wq) 
+    """
+    Compute the loss/metric t based on r, p, and q tensors.
+
+    Args:
+        r (torch.Tensor): Allocation matrix (batch_size x num_agents x num_agents)
+        p (torch.Tensor): Preference matrix (batch_size x num_agents x num_agents)
+        q (torch.Tensor): Preference matrix (batch_size x num_agents x num_agents)
+
+    Returns:
+        torch.Tensor: Computed tensor t with non-negative values.
+    """
+    # Compute wp (preference weight matrix for p)
+    wp = torch.where(p[:, :, None, :] - p[:, :, :, None] > 0, 1.0, 0.0)
+    
+    # Compute wq (preference weight matrix for q)
+    q_t = q.transpose(1, 2)  # Use a new variable for transposed q
+    wq = torch.where(q_t[:, :, None, :] - q_t[:, :, :, None] > 0, 1.0, 0.0)
+    
+    # Compute t using einsum for both wp and wq
+    t = (
+        1 - r
+        - torch.einsum('bic,bijc->bij', r, wp)
+        - torch.einsum('bic,bijc->bij', r.transpose(1, 2), wq).transpose(2, 1)
+    )
+    
+    # Ensure non-negative values
     return t.relu()
+
 
 def compute_spv_w(cfg, model, r, p, q):
     num_agents = cfg.num_agents
@@ -70,11 +94,6 @@ def compute_loss(cfg, model, r, p, q, lambd, rho):
     constr_vio = spv_w#+spv_f
 
     obj = t.sum(-1).sum(-1).mean()
-    # t の統計を表示
-    print("t mean:", t.mean().item())
-    print("t max:", t.max().item())
-    print("t min:", t.min().item())
-
 
     efficiency_loss = compute_efficiency_loss(cfg, r, p, q)
 

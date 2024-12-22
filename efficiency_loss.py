@@ -65,7 +65,7 @@ def calc_efficiency_loss(cfg, r, mu, p, q):
     """
     効率性損失を計算する。
     - r: マッチング確率行列 (2D tensor, num_agents x num_agents)
-    - mu: マッチング (1D list, num_agents)
+    - mu: 効率マッチング (1D list, num_agents)
     - p: 提案者の選好行列 (2D tensor, num_agents x num_agents)
     - q: 受け手の選好行列 (2D tensor, num_agents x num_agents)
     """
@@ -97,7 +97,7 @@ def compute_efficiency_loss(cfg, r, p, q):
     batch_size = p.shape[0]
     device = cfg.device
 
-    total_efficiency_loss = 0.0
+    total_efficiency_loss = torch.tensor(0.0, device=device)
 
     for batch_idx in range(batch_size):
         p_batch = p[batch_idx]
@@ -106,7 +106,7 @@ def compute_efficiency_loss(cfg, r, p, q):
         stable_matchings = generate_stable_matchings(p_batch, q_batch)
         efficient_matchings = filter_efficient_stable_matchings(stable_matchings, p_batch, q_batch)
 
-    batch_efficiency_loss = float("inf")
+    batch_efficiency_loss = torch.tensor(float("inf"), device=device)
     for matching in efficient_matchings:
         loss_for_matching = calc_efficiency_loss(cfg, r[batch_idx], matching, p_batch, q_batch)
         if loss_for_matching < batch_efficiency_loss:
