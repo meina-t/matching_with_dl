@@ -44,16 +44,16 @@ def filter_efficient_stable_matchings(stable_matchings, p, q):
         is_efficient = True
         for mu_prime in stable_matchings:
             if mu != mu_prime:
-                # 強いパレート支配の条件をチェック
-                pareto_dominates = True
+                # muがmu_primeに支配されているか
+                pareto_dominated = True
                 for i in range(len(mu)):
                     if (
-                        p[i, mu_prime[i]] <= p[i, mu[i]]
-                        and q[mu_prime[i], i] <= q[mu[i], i]
+                        p[i, mu_prime[i]] < p[i, mu[i]]
+                        #and q[mu_prime[i], i] <= q[mu[i], i]
                     ):
-                        pareto_dominates = False
+                        pareto_dominated = False
                         break
-                if pareto_dominates:
+                if pareto_dominated:
                     is_efficient = False
                     break
         if is_efficient:
@@ -73,7 +73,7 @@ def calc_efficiency_loss(cfg, r, mu, p, q):
     matching = torch.zeros((cfg.num_agents, cfg.num_agents), dtype=torch.float32).to(cfg.device)
     for i, j in enumerate(mu):
         matching[i][j] = 1.0
-    
+    """
     loss = 0.0
     # i, jはマッチング相手
     for i in range(cfg.num_agents):
@@ -83,7 +83,32 @@ def calc_efficiency_loss(cfg, r, mu, p, q):
                     if p[i, j] <= p[i, s]:
                         loss += matching[i, s] 
                         loss -= r[i, s]
+    """
+    prob_r = calc_favorable_match_prob(r, p)
+    prob_mu = calc_favorable_match_prob(matching, p)
+    loss = (prob_r - prob_mu).sum()
+                                        
     return loss
+
+def calc_favorable_match_prob(r, p):
+    """
+    r: マッチング確率行列 (2D tensor, num_agents x num_agents)
+    p: 提案者の選好行列 (2D tensor, num_agents x num_agents)
+    
+    戻り値:
+    3x3テンソル: 各エージェントが相手またはそれ以上に好ましい相手とマッチする確率
+    """
+    num_agents = r.size(0)
+    result = torch.zeros_like(r)
+    
+    for i in range(num_agents):
+        for j in range(num_agents):
+            # p[i][j] 以下の選好を持つ相手 s を見つける
+            mask = p[i] <= p[i][j]
+            # 対応する確率 r[i][s] を合計
+            result[i][j] = r[i][mask].sum()
+    
+    return result
 
 
 def compute_efficiency_loss(cfg, r, p, q):
@@ -95,6 +120,7 @@ def compute_efficiency_loss(cfg, r, p, q):
     """
     num_agents = p.shape[1]
     batch_size = p.shape[0]
+    print("batch_size", batch_size)
     device = cfg.device
 
     total_efficiency_loss = torch.tensor(0.0, device=device)
@@ -106,13 +132,13 @@ def compute_efficiency_loss(cfg, r, p, q):
         stable_matchings = generate_stable_matchings(p_batch, q_batch)
         efficient_matchings = filter_efficient_stable_matchings(stable_matchings, p_batch, q_batch)
 
-    batch_efficiency_loss = torch.tensor(float("inf"), device=device)
-    for matching in efficient_matchings:
-        loss_for_matching = calc_efficiency_loss(cfg, r[batch_idx], matching, p_batch, q_batch)
-        if loss_for_matching < batch_efficiency_loss:
-            batch_efficiency_loss = loss_for_matching
+        batch_efficiency_loss = torch.tensor(float("inf"), device=device)
+        for matching in efficient_matchings:
+            loss_for_matching = calc_efficiency_loss(cfg, r[batch_idx], matching, p_batch, q_batch)
+            print(matching, loss_for_matching)
+            if loss_for_matching < batch_efficiency_loss:
+                batch_efficiency_loss = loss_for_matching
 
-        
         # バッチ全体の損失を合計
         total_efficiency_loss += batch_efficiency_loss
 
