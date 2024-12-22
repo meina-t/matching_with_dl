@@ -138,7 +138,7 @@ def da_with_t(p, q):
         p_array = p_batch.cpu().numpy() if isinstance(p, torch.Tensor) else np.array(p)
         q_array = q_batch.cpu().numpy() if isinstance(q, torch.Tensor) else np.array(q)
     
-        tie_broken_q = tie_break(q_array)  # Use NumPy array for processing
+        tie_broken_q = tie_break(q_array)
         num_tie_breaks = len(tie_broken_q)
         total_result = np.zeros((3, 3))
     
