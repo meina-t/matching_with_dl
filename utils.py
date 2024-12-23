@@ -5,7 +5,7 @@ from tqdm import tqdm
 from primal_loss import compute_spv_w, compute_t
 from efficiency_loss import compute_efficiency_loss
 
-device = "mps" 
+device = "mps" if torch.cuda.is_available() else "cpu"
 
 def generate_all_patterns():
     patterns = []
@@ -127,7 +127,7 @@ def da_with_t(p, q):
     """
     num_agents = p.shape[1]
     batch_size = p.shape[0]
-    device = "mps"
+    device = device
 
     r = []
     for batch_idx in range(batch_size):

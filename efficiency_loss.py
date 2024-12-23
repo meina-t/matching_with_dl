@@ -120,7 +120,6 @@ def compute_efficiency_loss(cfg, r, p, q):
     """
     num_agents = p.shape[1]
     batch_size = p.shape[0]
-    print("batch_size", batch_size)
     device = cfg.device
 
     total_efficiency_loss = torch.tensor(0.0, device=device)
@@ -135,7 +134,6 @@ def compute_efficiency_loss(cfg, r, p, q):
         batch_efficiency_loss = torch.tensor(float("inf"), device=device)
         for matching in efficient_matchings:
             loss_for_matching = calc_efficiency_loss(cfg, r[batch_idx], matching, p_batch, q_batch)
-            print(matching, loss_for_matching)
             if loss_for_matching < batch_efficiency_loss:
                 batch_efficiency_loss = loss_for_matching
 
