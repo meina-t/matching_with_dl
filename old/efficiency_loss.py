@@ -103,8 +103,8 @@ def calc_favorable_match_prob(r, p):
     
     for i in range(num_agents):
         for j in range(num_agents):
-            # p[i][j] 以下の選好を持つ相手 s を見つける
-            mask = p[i] <= p[i][j]
+            # p[i][j] 以上の選好を持つ相手 s を見つける
+            mask = p[i] >= p[i][j]
             # 対応する確率 r[i][s] を合計
             result[i][j] = r[i][mask].sum()
     

@@ -2,8 +2,10 @@ import itertools
 import numpy as np
 import torch
 from tqdm import tqdm
-from primal_loss import compute_spv_w, compute_t
-from efficiency_loss import compute_efficiency_loss
+#from primal_loss import compute_spv_w, compute_t
+from model.loss.efficiency import compute_ev
+from model.loss.stability import compute_sv
+from model.loss.strategy_proofness import compute_spv
 
 device = "mps"
 
@@ -44,8 +46,8 @@ def deferred_acceptance(p, q, n=3):
     Deferred Acceptance Algorithm.
 
     Args:
-        p: Proposers' preference matrix.
-        q: Reviewers' preference matrix.
+        p: Proposers' preference matrix. n*n
+        q: Reviewers' preference matrix. n*n
         n: Number of proposers/reviewers.
 
     Returns:
@@ -160,7 +162,7 @@ def convert_to_float(df):
 
     return df.applymap(try_convert)
 
-def apply_features(cfg, model,df):
+def apply_features(cfg, model,df, data):
     model_efficiency_losses = []
     model_stability_losses = []
     model_sp_losses = []
@@ -173,13 +175,13 @@ def apply_features(cfg, model,df):
         q = torch.tensor([row['q']], dtype=torch.float32).to(device)
 
         model_output = model(p, q)
-        model_efficiency_loss = compute_efficiency_loss(cfg, model_output, p, q).cpu().item()
-        model_stability_loss = compute_t(model_output, p, q).mean().cpu().detach().numpy()
-        model_sp_loss = compute_spv_w(cfg, model, model_output, p, q).mean().cpu().detach().numpy()
+        model_efficiency_loss = compute_ev(cfg, model_output, p, q, data).cpu().item()
+        model_stability_loss = compute_sv(model_output, p, q).mean().cpu().detach().numpy()
+        model_sp_loss = compute_spv(cfg, model, model_output, p, q).mean().cpu().detach().numpy()
         da_output = da_with_t(p, q)
-        da_efficiency_loss = compute_efficiency_loss(cfg, da_output, p, q).cpu().detach().numpy()
-        da_stability_loss = compute_t(da_output, p, q).mean().cpu().detach().numpy()
-        da_sp_loss = compute_spv_w(cfg, da_with_t, da_output, p, q).mean().cpu().detach().numpy()
+        da_efficiency_loss = compute_ev(cfg, da_output, p, q, data).cpu().detach().numpy()
+        da_stability_loss = compute_sv(da_output, p, q).mean().cpu().detach().numpy()
+        da_sp_loss = compute_spv(cfg, da_with_t, da_output, p, q).mean().cpu().detach().numpy()
 
         model_efficiency_losses.append(model_efficiency_loss)
         model_stability_losses.append(model_stability_loss)
@@ -195,3 +197,6 @@ def apply_features(cfg, model,df):
     df['da_stability_loss'] = da_stability_losses
     df['da_sp_loss'] = da_sp_losses
     return df
+
+
+    
