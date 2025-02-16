@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-from model.data import Data
+from data import Data
 
 def compute_spv(cfg, model, r, p, q):
     """

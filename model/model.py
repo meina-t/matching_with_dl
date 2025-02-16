@@ -4,9 +4,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import logging
-from model.loss.efficiency import compute_ev
-from model.loss.stability import compute_sv
-from model.loss.strategy_proofness import compute_spv
+from loss.efficiency import compute_ev
+from loss.stability import compute_sv
+from loss.strategy_proofness import compute_spv
 
 
 class MatchingNet(nn.Module):
@@ -77,7 +77,7 @@ def train_model(cfg, model, data):
         # 損失の計算
         spv = compute_spv(cfg, model, r, P, Q)  # 制約条件1の損失
         sv = compute_sv(cfg, r, P, Q)  # 制約条件2の損失
-        objective_loss = compute_ev(cfg, r, P, Q, data)  # 目的関数
+        objective_loss = compute_ev(cfg, r, P, Q)  # 目的関数
 
         # 総合損失
         loss_matrix = lambda_spv * spv + lambda_sv * sv + objective_loss
@@ -93,7 +93,7 @@ def train_model(cfg, model, data):
         lambda_spv += rho * spv.sum().item()
         lambda_sv += rho * sv.sum().item()
         
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 100 == 0:
             print(f"Epoch: {epoch+1}")
             print(f"Total Loss: {total_loss.item()}")
             print(f"SPV: {spv.sum().item()}")
