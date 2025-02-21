@@ -21,7 +21,6 @@ def compute_spv(cfg, model, r, p, q):
     device = cfg.device
     G = Data(cfg)
 
-
     spv = torch.zeros((num_agents, num_agents), device=device)
     for agent_idx in range(num_agents):
         P_mis, Q_mis = G.compose_misreport(p, q, G.mis_array, agent_idx, is_P=True)
@@ -37,5 +36,11 @@ def compute_spv(cfg, model, r, p, q):
         for f in range(num_agents):
             mask = torch.where(p[:, agent_idx, :] >= p[:, agent_idx, f].view(-1, 1), 1, 0).to(device)
             mask = mask.repeat(1, r_mis_agent.shape[1]).view(r_mis_agent.shape[0], r_mis_agent.shape[1], r_mis_agent.shape[2])
-            spv[agent_idx, f] = ((r_mis_agent - r_agent) * mask).sum(-1).relu().sum(-1).mean()
+            spv_value = ((r_mis_agent - r_agent) * mask).sum(-1).relu().sum(-1).mean()
+            spv[agent_idx, f] = spv_value
+            if spv_value > 0:
+                print(f"SPV detected for agent {agent_idx} and f {f}")
+                print(f"SPV value: {spv_value}")
+                print(f"Misreported preferences (P_mis): {P_mis}")
+                print(f"Individual values:{((r_mis_agent - r_agent) * mask).sum(-1)}")
     return spv

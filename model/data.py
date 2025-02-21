@@ -14,10 +14,10 @@ class Data(object):
         self.corr = cfg.corr
         self.device = cfg.device
 
-        self.mis_array = torch.tensor(self.generate_mis_array(include_truncation = False), device = self.device, dtype=torch.float32)
+        self.mis_array = torch.tensor(self.generate_mis_array(allow_tie=False, include_truncation = False), device = self.device, dtype=torch.float32)
         self.all_possible_matchings = self.generate_all_possible_matchings(num_agents = self.num_agents)
     
-    def generate_mis_array(self, allow_tie = True, include_truncation = False):
+    def generate_mis_array(self, allow_tie=True, include_truncation=False):
         """ 
         Generates all possible rankings 
         Arguments
@@ -38,8 +38,11 @@ class Data(object):
             else:
                 m = np.array(list(itertools.permutations(np.arange(self.num_agents + 1))))
                 m = (m - m[:, -1:])[:, :-1]
-            
-        return m/self.num_agents
+        
+        # Normalize each row to sum to 1
+        m = m / m.sum(axis=1, keepdims=True)
+        
+        return m
     
     def generate_all_possible_matchings(self, num_agents = 3):
         """
