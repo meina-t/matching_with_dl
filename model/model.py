@@ -45,9 +45,6 @@ class MatchingNet(nn.Module):
         r = sinkhorn_normalization(r)
         return r
     
-    
-
-
 
 def train_model(cfg, model, data):
     """

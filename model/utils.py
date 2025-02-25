@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import itertools
 
 def is_pareto_dominates(p, mu, nu):
     """
@@ -73,34 +74,37 @@ def tie_break(q_batch):
     """
 
     results = [q_batch]
+    temp_results = []
     for i in range(3):  # 各行に対して処理
-        row = q_batch[i].copy()
-        unique_values, counts = np.unique(row, return_counts=True)
-        tie_indices = np.where(counts > 1)[0]
-
-        if len(tie_indices) == 0:
-            continue
-
-        new_results = []
         for result in results:
-            current_row = result[i].copy()
-            if len(tie_indices) == 1: # 同じ値が2個の場合
-                value_index = np.where(row == unique_values[tie_indices[0]])[0]
-                for j in range(2):
-                    new_row = current_row.copy()
-                    new_row[value_index[j]] += 0.1
-                    new_result = result.copy()
-                    new_result[i] = new_row
-                    new_results.append(new_result)
-            elif len(tie_indices) == 3: # 同じ値が3個の場合
-                for p in itertools.permutations([0.2,0.1,0.0]):
-                    new_row = current_row.copy()
-                    for k in range(3):
-                        new_row[k] += p[k]
-                    new_result = result.copy()
-                    new_result[i] = new_row
-                    new_results.append(new_result)
-        results = new_results
+            row = result[i].copy()
+            unique_values, counts = np.unique(row, return_counts=True)
+            
+            for value, count in zip(unique_values, counts):
+                if count == 1:
+                    continue
+
+                elif count == 2:
+                    value_index = np.where(row == value)[0]
+                    for j in range(2):
+                        new_row = row.copy()
+                        new_row[value_index[j]] += 0.1
+                        new_result = result.copy()
+                        new_result[i] = new_row
+                        temp_results.append(new_result)
+
+                elif count == 3:
+                    for p in itertools.permutations([0.2,0.1,0.0]):
+                        new_row = row.copy()
+                        for k in range(3):
+                            new_row[k] += p[k]
+                        new_result = result.copy()
+                        new_result[i] = new_row
+                        temp_results.append(new_result)
+            if len(temp_results) == 0:
+                temp_results.append(result)
+        results = temp_results
+        temp_results = []
     return np.array(results)
 
 def deferred_acceptance(p, q, n=3):
@@ -117,6 +121,7 @@ def deferred_acceptance(p, q, n=3):
     """
     # Create a copy of p to avoid modifying the original preference matrix
     p_copy = p.copy()
+    #print(p_copy, q)
 
     matching_output = np.zeros((n, n), dtype=int)
     remain_p = list(range(n))
@@ -138,5 +143,5 @@ def deferred_acceptance(p, q, n=3):
 
         # Update the COPY of p
         p_copy[pi][qi] = -1
-
+    #print(matching_output)
     return matching_output
