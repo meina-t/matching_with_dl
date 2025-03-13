@@ -1,6 +1,6 @@
 import torch
 
-def compute_ev(cfg, r, p, q):
+def compute_ev(cfg, r, p, q, non_weighted=False):
     """
     効率性損失を計算する。
     - r: マッチング確率行列 (batch_size x num_agents x num_agents)
@@ -15,7 +15,10 @@ def compute_ev(cfg, r, p, q):
 
     efficiency_loss = []
 
-    lambda_weights = cfg.lambda_weights
+    if non_weighted == False:
+        lambda_weights = cfg.lambda_weights
+    else:
+        lambda_weights = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], dtype=torch.float32, device=device)
 
     cond = (p.unsqueeze(2) >= p.unsqueeze(-1)).float() 
     efficiency_per_batch = (r.unsqueeze(2) * cond).sum(dim=-1)

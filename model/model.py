@@ -47,8 +47,6 @@ class MatchingNet(nn.Module):
     
 
 def train_model(cfg, model, data):
-    """
-    """
     device = cfg.device
     num_epochs = cfg.epochs
     lr = cfg.lr
@@ -77,7 +75,7 @@ def train_model(cfg, model, data):
         objective_loss = compute_ev(cfg, r, P, Q)  # 目的関数
 
         # 総合損失
-        loss_matrix = lambda_spv * spv + lambda_sv * sv + objective_loss
+        loss_matrix = lambda_spv * spv + lambda_sv * sv + objective_loss + rho * sv ** 2 + rho * spv ** 2
         total_loss = loss_matrix.sum()
         
         # 逆伝播とパラメータ更新
@@ -87,8 +85,15 @@ def train_model(cfg, model, data):
         optimizer.step()
 
         # パラメータの更新
-        lambda_spv += rho * spv.sum().item()
-        lambda_sv += rho * sv.sum().item()
+        if spv.sum().item() > 0.15:
+            lambda_spv += rho * spv.sum().item()
+        if sv.sum().item() > 0.15:
+            lambda_sv += rho * sv.sum().item()
+
+        if spv.sum().item() > 0.15 or sv.sum().item() > 0.15:
+            rho *= 1.02  # 収束が遅いなら rho を増加
+        elif spv.sum().item() < 0.05 and sv.sum().item() < 0.05:
+            rho *= 0.98  # 収束が早すぎるなら rho を減少
         
         if (epoch + 1) % 100 == 0:
             print(f"Epoch: {epoch+1}")
