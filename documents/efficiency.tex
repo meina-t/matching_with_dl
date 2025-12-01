@@ -1,0 +1,71 @@
+\documentclass{article}
+
+\usepackage{luatexja} % This package is used for Japanese text in LuaLaTeX
+\usepackage{amsmath}  % For better math handling
+\usepackage{amssymb}  % For additional math symbols
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{amsthm}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+\subsection*{定義}
+\begin{definition}
+    マッチングgがg’にFirstOrderStochasticDominateされるとは、
+    \begin{align*}
+        \forall s \in S, c \in C,
+        \sum_{c' \succ_s c} g_{s,c}(\succ) \leq \sum_{c' \succ_s c} g'_{s,c}(\succ)\\
+        and \\
+        \exists s \in S, c \in C,
+        \sum_{c' \succ_s c} g_{s,c}(\succ) < \sum_{c' \succ_s c} g'_{s,c}(\succ)
+    \end{align*}
+\end{definition}
+\begin{definition}
+    メカニズムMがメカニズムM'にFirstOrderStochasticDominate(FOSD)されるとは、すべての選好プロファイルに対して、Mの出力マッチングがM'の出力マッチングにFirstOrderStochasticDominateされることである。すなわち、
+    \begin{equation}
+    \begin{aligned}
+        \forall \succ \in P,\\
+        &\forall s \in S, c \in C,
+        &\sum_{c' \succ_s c} g_{s,c}(\succ) \leq \sum_{c' \succ_s c} g'_{s,c}(\succ)\\
+        and \\
+        &\exists s \in S, c \in C,
+        &\sum_{c' \succ_s c} g_{s,c}(\succ) < \sum_{c' \succ_s c} g'_{s,c}(\succ)
+    \end{aligned}
+    \end{equation}
+\end{definition}
+
+
+\subsection*{効率性の証明}
+ある正の実数ベクトル$(\lambda_s)_{s \in S} \in \mathbb{R}_{++}^{|S|}$をとり、
+\begin{align*}
+L^M((\lambda_s)_{s \in S}) = \sum_{\succ \in P}\sum_{s \in S} \lambda_s \sum_{c \in C} \sum_{c' \succ_s c} g^M_{s,c}(\succ)
+\end{align*}
+とした時、これを最大化するメカニズムMがFOSDされないことを示す。
+対偶をとり、メカニズムMがM'にFOSDされるとき、
+\begin{equation}
+\begin{aligned}
+    &\forall (\lambda_s)_{s \in S}\in \mathbb{R}_{++}^{|S|}\\ 
+    &L^M((\lambda_s)_{s \in S}) < L^{M'}((\lambda_s)_{s \in S})
+\end{aligned}
+\end{equation}
+が成り立つことを示す。
+メカニズムMがM'にFOSDされるとき、(1)より、以下が成立。
+\begin{align*}
+    &\forall \succ \in P, \forall s \in S,\\
+    &\sum_{c \in C} \sum_{c' \succ_s c} g^M_{s,c}(\succ) < \sum_{c \in C}\sum_{c' \succ_s c} g^{M'}_{s,c}(\succ)\\
+    \rightarrow
+    &\forall \succ \in P,\forall s \in S,\forall (\lambda_s)_{s \in S} \in \mathbb{R}_{++}\\
+    &\lambda_s \sum_{c \in C} \sum_{c' \succ_s c} g^M_{s,c}(\succ) < \lambda_s \sum_{c \in C}\sum_{c' \succ_s c} g^{M'}_{s,c}(\succ)\\
+    \rightarrow
+    &\forall \succ \in P,\forall (\lambda_s)_{s \in S} \in \mathbb{R}_{++}^{|S|}\\
+    &\sum_{s \in S}\lambda_s \sum_{c \in C} \sum_{c' \succ_s c} g^M_{s,c}(\succ) < \sum_{s \in S}\lambda_s \sum_{c \in C}\sum_{c' \succ_s c} g^{M'}_{s,c}(\succ)\\
+    \rightarrow
+    &\forall (\lambda_s)_{s \in S} \in \mathbb{R}_{++}^{|S|}\\
+    &\sum_{\succ \in P}\sum_{s \in S}\lambda_s \sum_{c \in C} \sum_{c' \succ_s c} g^M_{s,c}(\succ) < \sum_{\succ \in P}\sum_{s \in S}\lambda_s \sum_{c \in C}\sum_{c' \succ_s c} g^{M'}_{s,c}(\succ)\\
+\end{align*}
+(2)が成り立つことが示された。
+
+
+\end{document}
