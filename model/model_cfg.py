@@ -60,6 +60,8 @@ def train_model(cfg, model, data):
     lambda_sv = 1.0  # c_2 の重み初期値
 
     rho = 1  # 重み付けのパラメータ
+    rho_max = 3000.0
+    update_interval = 100  # パラメータ更新の間隔
     
     print("Training started.")
     for epoch in range(num_epochs):
@@ -72,11 +74,11 @@ def train_model(cfg, model, data):
         # 損失の計算
         spv = compute_spv(cfg, model, r, P, Q)  # 制約条件1の損失
         sv = compute_sv(cfg, r, P, Q)  # 制約条件2の損失
-        objective_loss = compute_ev(cfg, r, P, Q)  # 目的関数
+        objective_loss = compute_ev(cfg, r, P, Q)/9  # 目的関数
 
         # 総合損失
         loss_matrix = lambda_spv * spv + lambda_sv * sv + objective_loss + rho * sv ** 2 + rho * spv ** 2
-        total_loss = loss_matrix.sum()
+        total_loss = loss_matrix.mean()
         
         # 逆伝播とパラメータ更新
         optimizer.zero_grad()
@@ -84,6 +86,17 @@ def train_model(cfg, model, data):
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
 
+        if (epoch + 1) % update_interval == 0:
+            with torch.no_grad():
+                # λ の更新: λ ← λ + ρ * c(x)
+                lambda_spv += rho * spv.mean().item()
+                lambda_sv += rho * sv.mean().item()
+
+                # 制約の改善が見られない場合に rho を大きくする
+                # ここでは簡易的に一定倍率で増加（ユーザーのロジックを流用）
+                if spv.mean().item() > 0.01 or sv.mean().item() > 0.01:
+                    rho = min(rho * 1.05, rho_max)
+        """            
         # パラメータの更新
         if spv.sum().item() > 0.15:
             lambda_spv += rho * spv.sum().item()
@@ -94,7 +107,7 @@ def train_model(cfg, model, data):
             rho *= 1.02  # 収束が遅いなら rho を増加
         elif spv.sum().item() < 0.05 and sv.sum().item() < 0.05:
             rho *= 0.98  # 収束が早すぎるなら rho を減少
-        
+        """
         if (epoch + 1) % 100 == 0:
             print(f"Epoch: {epoch+1}")
             print(f"Total Loss: {total_loss.item()}")

@@ -37,7 +37,7 @@ def compute_spv(cfg, e_model, r, p, q):
             mask = torch.where(p[:, agent_idx, :] >= p[:, agent_idx, f].view(-1, 1), 1, 0).to(device)
             mask = mask.repeat(1, r_mis_agent.shape[1]).view(r_mis_agent.shape[0], r_mis_agent.shape[1], r_mis_agent.shape[2])
             spv_values = ((r_mis_agent - r_agent) * mask).sum(-1).relu()
-            spv_value = spv_values.sum(-1).mean()
+            spv_value = spv_values.max(dim=-1)[0].mean()
             spv[agent_idx, f] = spv_value
             """
             if spv_value > 0:

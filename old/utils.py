@@ -175,12 +175,12 @@ def apply_features(cfg, model,df, data):
         q = torch.tensor([row['q']], dtype=torch.float32).to(device)
 
         model_output = model(p, q)
-        model_efficiency_loss = compute_ev(cfg, model_output, p, q, data).cpu().item()
-        model_stability_loss = compute_sv(model_output, p, q).mean().cpu().detach().numpy()
+        model_efficiency_loss = compute_ev(cfg, model_output, p, q, data).mean().cpu().item()
+        model_stability_loss = compute_sv(cfg, model_output, p, q).mean().cpu().detach().numpy()
         model_sp_loss = compute_spv(cfg, model, model_output, p, q).mean().cpu().detach().numpy()
         da_output = da_with_t(p, q)
-        da_efficiency_loss = compute_ev(cfg, da_output, p, q, data).cpu().detach().numpy()
-        da_stability_loss = compute_sv(da_output, p, q).mean().cpu().detach().numpy()
+        da_efficiency_loss = compute_ev(cfg, da_output, p, q, data).mean().cpu().detach().numpy()
+        da_stability_loss = compute_sv(cfg, da_output, p, q).mean().cpu().detach().numpy()
         da_sp_loss = compute_spv(cfg, da_with_t, da_output, p, q).mean().cpu().detach().numpy()
 
         model_efficiency_losses.append(model_efficiency_loss)
